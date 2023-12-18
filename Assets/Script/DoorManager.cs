@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using static UnityEditor.Progress;
 
@@ -19,10 +21,29 @@ public class DoorManager : MonoBehaviour
     [SerializeField] private int PercentageOfThreeDepth = 5;
 
     [SerializeField] private GameObject doorPrefab;
+    [SerializeField] private GameObject linerendererPrefab;
 
     private List<GameObject> doorSpawnPointRun = new List<GameObject>();
     private List<GameObject> instanciedDoors = new List<GameObject>();
     private List<List<GameObject>> instanciedDoorsDepth = new List<List<GameObject>>();
+
+    private Door firstDoorComponent;
+    private Door lastDoorComponent;
+    List<Door> path = new List<Door>();
+    LineRenderer lr;
+
+    private void OnEnable()
+    {
+        GameManager.Instance._enableDelegateSoluce += EnableSoluce;
+        GameManager.Instance._disableDelegateSoluce += DisableSoluce;
+    }
+
+    private void OnDisable()
+    {
+        GameManager.Instance._enableDelegateSoluce -= EnableSoluce;
+        GameManager.Instance._disableDelegateSoluce -= DisableSoluce;
+
+    }
 
     public void Start()
     {
@@ -45,7 +66,7 @@ public class DoorManager : MonoBehaviour
         int depth = Random.Range(DepthMin, DepthMax);
 
         GameObject firstDoor = Instantiate(doorPrefab, doorSpawnPointRun[0].transform);
-        Door firstDoorComponent = firstDoor.GetComponent<Door>();
+        firstDoorComponent = firstDoor.GetComponent<Door>();
         firstDoorComponent.Id = doorId[0];
         doorId.RemoveAt(0);
         doorSpawnPointRun.RemoveAt(0);
@@ -54,7 +75,7 @@ public class DoorManager : MonoBehaviour
         instanciedDoorsDepth[0].Add(firstDoor);
 
 
-        yield return new WaitForSeconds(3);
+        //yield return new WaitForSeconds(3);
 
         for (int y = 1; y < depth - 1; y++)
         {
@@ -84,38 +105,13 @@ public class DoorManager : MonoBehaviour
                         doorItem.previousDoorsComponent.Add(previousDoorRandom);
                     }
                 }
-                //if (randomNumberLink <= PercentageOfThreeLink)
-                //{
-                //    for (int x = 0; x < 3; x++)
-                //    {
-                //        Door previousDoorRandom = instanciedDoorsDepth[y - 1][Random.Range(0, instanciedDoorsDepth[y - 1].Count)].GetComponent<Door>();
-                //        doorItem.previousDoors.Add(previousDoorRandom.Id);
-                //        doorItem.previousDoorsComponent.Add(previousDoorRandom);
-                //    }
-                //}
-                //else if(PercentageOfThreeLink <= randomNumberLink && randomNumberLink <= PercentageOfTwoLink)
-                //{
-                //    for (int x = 0;x < 2; x++)
-                //    {
-                //        Door previousDoorRandom = instanciedDoorsDepth[y - 1][Random.Range(0, instanciedDoorsDepth[y - 1].Count)].GetComponent<Door>();
-                //        doorItem.previousDoors.Add(previousDoorRandom.Id);
-                //        doorItem.previousDoorsComponent.Add(previousDoorRandom);
-                //    }
-                //}
-                //else
-                //{
-                //    Door previousDoorRandom = instanciedDoorsDepth[y - 1][Random.Range(0, instanciedDoorsDepth[y - 1].Count)].GetComponent<Door>();
-                //    doorItem.previousDoors.Add(previousDoorRandom.Id);
-                //    doorItem.previousDoorsComponent.Add(previousDoorRandom);
-                //}
-
             }
-            yield return new WaitForSeconds(3);
+            //yield return new WaitForSeconds(3);
         }
 
 
         GameObject lastDoor = Instantiate(doorPrefab, doorSpawnPointRun[0].transform);
-        Door lastDoorComponent = lastDoor.GetComponent<Door>();
+        lastDoorComponent = lastDoor.GetComponent<Door>();
         lastDoorComponent.Id = doorId[0];
         lastDoorComponent.DoorDepth = depth;
 
@@ -130,42 +126,14 @@ public class DoorManager : MonoBehaviour
 
 
 
+        foreach (var item in instanciedDoors)
+        {
+            item.GetComponent<Door>().Setup();
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        //for (int i = 0; i < numberOfDoor; i++)
-        //{
-        //    int lastElement = doorId.Last();
-        //    doorId.RemoveAt(doorId.Count -1);
-        //    if (i != 0)
-        //    {
-        //        instanciedDoors[i-1].GetComponent<Door>().NextDoorId = lastElement;
-        //    }
-        //    GameObject go = Instantiate(doorPrefab, doorSpawnPointRun.Last().transform);
-        //    doorSpawnPointRun.RemoveAt(doorSpawnPointRun.Count -1);
-        //    go.GetComponent<Door>().Id = lastElement;
-        //    instanciedDoors.Add(go);
-        //}
-
-        //FindObjectOfType<Player>().currentKey = instanciedDoors[0].GetComponent<Door>().Id;
-        //instanciedDoors[instanciedDoors.Count -1].GetComponent<Door>().isLastDoor = true;
+        GetFastestSoluce();
+        Setup();
+        yield return null;
     }
 
     public List<T> Shuffle<T>(List<T> nom)
@@ -222,5 +190,96 @@ public class DoorManager : MonoBehaviour
             linkRandom = 1;
         }
         return linkRandom;
+    }
+
+    public void GetFastestSoluce()
+    {
+
+        Door startNode = lastDoorComponent;
+        Door targetNode = firstDoorComponent;
+
+        List<Door> openSet = new List<Door>();
+        HashSet<Door> closedSet = new HashSet<Door>();
+        openSet.Add(startNode);
+
+        while (openSet.Count > 0)
+        {
+            Door currentNode = openSet[0];
+            for (int i = 1; i < openSet.Count; i++)
+            {
+                if (openSet[i].FCost < currentNode.FCost || (openSet[i].FCost == currentNode.FCost && openSet[i].hCost < currentNode.hCost))
+                {
+                    currentNode = openSet[i];
+                }
+            }
+
+            openSet.Remove(currentNode);
+            closedSet.Add(currentNode);
+
+            if (currentNode == targetNode)
+            {
+                RetracePath(startNode, targetNode);
+                return;
+            }
+
+            foreach (Door neighbor in currentNode.previousDoorsComponent)
+            {
+                if (closedSet.Contains(neighbor))
+                    continue;
+
+                int newCostToNeighbor = currentNode.gCost + GetDistance(currentNode, neighbor);
+                if (newCostToNeighbor < neighbor.gCost || !openSet.Contains(neighbor))
+                {
+                    neighbor.gCost = newCostToNeighbor;
+                    neighbor.hCost = GetDistance(neighbor, targetNode);
+                    neighbor.parentDoor = currentNode;
+
+                    if (!openSet.Contains(neighbor))
+                        openSet.Add(neighbor);
+                }
+            }
+        }
+    }
+    int GetDistance(Door nodeA, Door nodeB)
+    {
+        return nodeB.DoorDepth - nodeA.DoorDepth;
+    }
+
+    void RetracePath(Door startNode, Door endNode)
+    {
+        path = new List<Door>();
+        Door currentNode = endNode;
+        while (currentNode != startNode)
+        {
+            path.Add(currentNode);
+            currentNode = currentNode.parentDoor;
+        }
+        path.Add(startNode);
+        path.Reverse();
+    }
+
+
+    public void Setup()
+    {
+        lr = Instantiate(linerendererPrefab).GetComponent<LineRenderer>();
+        lr.positionCount = path.Count;
+        int index = 0;
+        foreach (var item in path)
+        {
+            lr.SetPosition(index, item.transform.position);
+            index++;
+        }
+        lr.gameObject.SetActive(false);
+    }
+
+    public void EnableSoluce()
+    {
+        lr.gameObject.SetActive(true);
+    }
+
+    public void DisableSoluce()
+    {
+        lr.gameObject.SetActive(false);
+
     }
 }

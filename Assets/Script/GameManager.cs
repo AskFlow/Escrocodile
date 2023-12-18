@@ -13,6 +13,12 @@ public class GameManager : MonoBehaviour
 
     public int Seed = 0;
 
+    public delegate void EnableSoluceMode();
+    public EnableSoluceMode _enableDelegateSoluce;
+
+    public delegate void DisableSoluceMode();
+    public DisableSoluceMode _disableDelegateSoluce;
+
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -23,6 +29,18 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+    }
+
+    public void ChangeSoluce(bool newSoluce)
+    {
+        if (newSoluce)
+        {
+            _enableDelegateSoluce();
+        }
+        else
+        {
+            _disableDelegateSoluce();
+        }
     }
 
     public void Win()

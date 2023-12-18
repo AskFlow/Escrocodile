@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using static UnityEditor.Progress;
@@ -10,22 +12,59 @@ public class Door : MonoBehaviour
     public int DoorDepth = 0;
     public List<int> previousDoors = new List<int>();
     public List<Door> previousDoorsComponent = new List<Door> ();
-    public TMPro.TextMeshProUGUI m_TextMeshPro;
+    public List<GameObject> lineRendererList = new List<GameObject>();
+    public SpriteRenderer obj;
     public bool isLastDoor = false;
-    public Light2D _light;
     public bool doorPassed;
 
-    public SpriteRenderer obj;
+    [Space(100)]
 
+    public Light2D _light;
+    public GameObject lineRendererParent;
+    public GameObject lineRenderer;
+    public TMPro.TextMeshProUGUI m_TextMeshPro;
     public List<Color> depthColor;
 
+    //pathfinding
+
+    [HideInInspector] public Door parentDoor;
+    [HideInInspector] public int gCost;
+    [HideInInspector] public int hCost;
+    public int FCost { get { return gCost + hCost; } }
+
+    private void OnEnable()
+    {
+        GameManager.Instance._enableDelegateSoluce += EnableSoluce;
+        GameManager.Instance._disableDelegateSoluce += DisableSoluce;
+    }
+
+    private void OnDisable()
+    {
+        GameManager.Instance._enableDelegateSoluce -= EnableSoluce;
+        GameManager.Instance._disableDelegateSoluce -= DisableSoluce;
+
+    }
     private void Update()
     {
         m_TextMeshPro.text = Id.ToString();
         obj.color = depthColor[DoorDepth];
+
+    }
+
+    public void Setup()
+    {
         foreach (var item in previousDoorsComponent)
         {
-            
+            LineRenderer lr = Instantiate(lineRenderer, lineRendererParent.transform).GetComponent<LineRenderer>();
+            lr.positionCount = 2;
+            lr.SetPosition(0, transform.position);
+            lr.SetPosition(1, item.transform.position);
+            lr.startColor = new Color(depthColor[DoorDepth].r, depthColor[DoorDepth].g, depthColor[DoorDepth].b, 0.2f);
+            lr.endColor = new Color(depthColor[item.DoorDepth].r, depthColor[item.DoorDepth].g, depthColor[item.DoorDepth].b, 0.2f);
+
+            lr.gameObject.SetActive(false);
+            lineRendererList.Add(lr.gameObject);
+
         }
     }
 
@@ -48,12 +87,20 @@ public class Door : MonoBehaviour
         }
     }
 
-    private void OnDrawGizmos()
+    public void EnableSoluce()
     {
-        foreach (var item in previousDoorsComponent)
+        foreach (var item in lineRendererList)
         {
-            Gizmos.color = depthColor[DoorDepth];
-            Gizmos.DrawLine(gameObject.transform.position, item.gameObject.transform.position);
+            item.gameObject.SetActive(true);
         }
     }
+
+    public void DisableSoluce()
+    {
+        foreach (var item in lineRendererList)
+        {
+            item.gameObject.SetActive(false);
+        }
+    }
+
 }

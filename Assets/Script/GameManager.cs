@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using System;
 
 public class GameManager : MonoBehaviour
 {
@@ -19,6 +21,9 @@ public class GameManager : MonoBehaviour
     public delegate void DisableSoluceMode();
     public DisableSoluceMode _disableDelegateSoluce;
 
+    public DoorManager doorManager;
+    public TextMeshProUGUI input;
+
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -29,6 +34,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+
     }
 
     public void ChangeSoluce(bool newSoluce)
@@ -52,5 +58,18 @@ public class GameManager : MonoBehaviour
     {
 
     }
+    public void ResetDoor()
+    {
+        if(input.text == "")
+        {
+            UnityEngine.Random.InitState(DateTime.Now.GetHashCode());
+        }
+        else
+        {
+            int result = Int32.Parse(input.text);
+            UnityEngine.Random.InitState(result);
 
+        }
+        doorManager.Restart();
+    }
 }

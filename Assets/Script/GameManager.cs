@@ -66,7 +66,8 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            int result = Int32.Parse(input.text);
+            int result;
+            int.TryParse(input.text, out result);
             UnityEngine.Random.InitState(result);
 
         }

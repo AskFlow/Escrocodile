@@ -62,6 +62,7 @@ public class Player : MonoBehaviour
 
     public void Die()
     {
+        transform.position = Vector3.zero;
         GameManager.Instance.Lose();
     }
 }

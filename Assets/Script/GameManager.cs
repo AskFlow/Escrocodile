@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using System;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -14,6 +15,7 @@ public class GameManager : MonoBehaviour
     public Player player;
 
     public int Seed = 0;
+    public TextMeshProUGUI seedText;
 
     public delegate void EnableSoluceMode();
     public EnableSoluceMode _enableDelegateSoluce;
@@ -22,7 +24,12 @@ public class GameManager : MonoBehaviour
     public DisableSoluceMode _disableDelegateSoluce;
 
     public DoorManager doorManager;
-    public TextMeshProUGUI input;
+    public TMP_InputField input;
+
+    public GameObject VictoryMenu;
+    public GameObject parameterMenu;
+
+
 
     void Awake()
     {
@@ -35,6 +42,11 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
 
+    }
+
+    private void Update()
+    {
+        seedText.text = Seed.ToString();
     }
 
     public void ChangeSoluce(bool newSoluce)
@@ -51,23 +63,33 @@ public class GameManager : MonoBehaviour
 
     public void Win()
     {
-
+        VictoryMenu.SetActive(true);
     }
 
     public void Lose()
     {
 
     }
+    
+    public void ToggleParameter(bool value)
+    {
+        parameterMenu.SetActive(value);
+    }
+
     public void ResetDoor()
     {
+        VictoryMenu.SetActive(false);
         if(input.text == "")
         {
-            UnityEngine.Random.InitState(DateTime.Now.GetHashCode());
+            int result = DateTime.Now.GetHashCode();
+            UnityEngine.Random.InitState(result);
+            Seed = result;
         }
         else
         {
             int result;
             int.TryParse(input.text, out result);
+            Seed = result;
             UnityEngine.Random.InitState(result);
 
         }

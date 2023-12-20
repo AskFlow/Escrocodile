@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor.Experimental.GraphView;
+using TMPro;
 using UnityEngine;
-using static UnityEditor.Progress;
+using UnityEngine.Windows;
 
 public class DoorManager : MonoBehaviour
 {
@@ -32,6 +32,18 @@ public class DoorManager : MonoBehaviour
     List<Door> path = new List<Door>();
     LineRenderer lr;
 
+    // UII
+
+    public TextMeshProUGUI placeholderDepthMin;
+    public TMP_InputField inputDepthMin;
+
+    public TextMeshProUGUI placeholderDepthMax;
+    public TMP_InputField inputDepthMax;
+
+    public TextMeshProUGUI placeholderMaxDoor;
+    public TMP_InputField inputMaxDoor;
+
+
     private void OnEnable()
     {
         GameManager.Instance._enableDelegateSoluce += EnableSoluce;
@@ -49,11 +61,51 @@ public class DoorManager : MonoBehaviour
     {
         Random.InitState(GameManager.Instance.Seed);
         StartCoroutine(StartNewRound());
+        placeholderDepthMax.text = DepthMax.ToString();
+        placeholderDepthMin.text = DepthMin.ToString();
+        placeholderMaxDoor.text = MaxDoorGenerated.ToString();
     }
 
     public void Restart()
     {
+        Destroy(lr);
+        lr = null;
         Random.InitState(GameManager.Instance.Seed);
+        foreach (var item in instanciedDoors)
+        {
+            Destroy(item);
+        }
+        foreach (var item in instanciedDoorsDepth)
+        {
+            item.Clear();
+        }
+
+        instanciedDoorsDepth.Clear();
+
+        if(inputDepthMin.text != "")
+        {
+            int result;
+            int.TryParse(inputDepthMin.text, out result);
+            result = Mathf.Clamp(result, 2, 8);
+            inputDepthMin.text = result.ToString();
+            DepthMin = result;
+        }
+        if(inputDepthMax.text != "")
+        {
+            int result;
+            int.TryParse(inputDepthMax.text, out result);
+            result = Mathf.Clamp(result, 2, 8);
+            inputDepthMax.text = result.ToString();
+            DepthMax = result;
+        }
+        if(inputMaxDoor.text != "")
+        {
+            int result;
+            int.TryParse(inputMaxDoor.text, out result);
+            result = Mathf.Clamp(result, 2, 7);
+            MaxDoorGenerated = result;
+            inputMaxDoor.text = result.ToString();
+        }
         StartCoroutine(StartNewRound());
     }
 
@@ -120,6 +172,7 @@ public class DoorManager : MonoBehaviour
         lastDoorComponent = lastDoor.GetComponent<Door>();
         lastDoorComponent.Id = doorId[0];
         lastDoorComponent.DoorDepth = depth;
+        lastDoorComponent.isLastDoor = true;    
 
         doorId.RemoveAt(0);
         doorSpawnPointRun.RemoveAt(0);

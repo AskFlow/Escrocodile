@@ -1,10 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
-using static UnityEditor.Progress;
 
 public class Door : MonoBehaviour
 {
@@ -24,6 +22,7 @@ public class Door : MonoBehaviour
     [Space(100)]
 
     public Light2D _light;
+    public Light2D _winLight;
     public GameObject lineRendererParent;
     public GameObject lineRenderer;
     public TMPro.TextMeshProUGUI m_TextMeshPro;
@@ -81,19 +80,27 @@ public class Door : MonoBehaviour
             lr.positionCount = 2;
             lr.SetPosition(0, transform.position);
             lr.SetPosition(1, item.transform.position);
-            lr.startColor = new Color(depthColor[DoorDepth].r, depthColor[DoorDepth].g, depthColor[DoorDepth].b, 0.2f);
-            lr.endColor = new Color(depthColor[item.DoorDepth].r, depthColor[item.DoorDepth].g, depthColor[item.DoorDepth].b, 0.2f);
+            lr.startColor = new Color(depthColor[DoorDepth].r, depthColor[DoorDepth].g, depthColor[DoorDepth].b, 0.25f);
+            lr.endColor = new Color(depthColor[item.DoorDepth].r, depthColor[item.DoorDepth].g, depthColor[item.DoorDepth].b, 0.25f);
 
             lr.gameObject.SetActive(false);
             lineRendererList.Add(lr.gameObject);
         }
         PopupCondition();
+        if(isLastDoor)
+        {
+            _winLight.enabled = true;
+        }
     }
 
     public void OnPlayerEnter(Player player)
     {
         if (isDoorOpenable)
         {
+            if(isLastDoor)
+            {
+                GameManager.Instance.Win();
+            }
             doorPassed = true;
         }
         else

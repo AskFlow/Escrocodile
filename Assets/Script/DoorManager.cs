@@ -125,7 +125,7 @@ public class DoorManager : MonoBehaviour
         lastDoorComponent.previousDoorsComponent.Add(previousLastDoorRandom);
 
 
-
+        firstDoor.GetComponent<Door>().isDoorOpenable = true;
         foreach (var item in instanciedDoors)
         {
             item.GetComponent<Door>().Setup();

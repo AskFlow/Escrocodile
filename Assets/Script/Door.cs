@@ -16,6 +16,10 @@ public class Door : MonoBehaviour
     public SpriteRenderer obj;
     public bool isLastDoor = false;
     public bool doorPassed;
+    public bool isDoorOpenable;
+    public GameObject Popup;
+    public GameObject conditonPrefab;
+    public GameObject prefabParent;
 
     [Space(100)]
 
@@ -23,6 +27,7 @@ public class Door : MonoBehaviour
     public GameObject lineRendererParent;
     public GameObject lineRenderer;
     public TMPro.TextMeshProUGUI m_TextMeshPro;
+    public TMPro.TextMeshProUGUI m_TextOpenableCondition;
     public List<Color> depthColor;
 
     //pathfinding
@@ -49,6 +54,23 @@ public class Door : MonoBehaviour
         m_TextMeshPro.text = Id.ToString();
         obj.color = depthColor[DoorDepth];
 
+        foreach (var item in previousDoorsComponent)
+        {
+            if (item.doorPassed)
+            {
+                isDoorOpenable = true;
+            }
+        }
+
+        if (isDoorOpenable)
+        {
+            _light.enabled = true;
+            _light.color = Color.green;
+        }
+        if (doorPassed)
+        {
+            _light.enabled = false;
+        }
     }
 
     public void Setup()
@@ -64,28 +86,22 @@ public class Door : MonoBehaviour
 
             lr.gameObject.SetActive(false);
             lineRendererList.Add(lr.gameObject);
-
         }
+        PopupCondition();
     }
 
     public void OnPlayerEnter(Player player)
     {
-        if(player.currentKey == Id)
+        if (isDoorOpenable)
         {
-            if(isLastDoor)
-            {
-                GameManager.Instance.Win();
-            }
-            else
-            {
-                //player.currentKey = NextDoorId;
-            }
+            doorPassed = true;
         }
         else
         {
             player.Die();
         }
     }
+
 
     public void EnableSoluce()
     {
@@ -100,6 +116,26 @@ public class Door : MonoBehaviour
         foreach (var item in lineRendererList)
         {
             item.gameObject.SetActive(false);
+        }
+    }
+
+    public void OnDisplayPopup()
+    {
+        Popup.SetActive(true);
+    }
+
+    public void OnHidePopup()
+    {
+        Popup.SetActive(false);
+    }
+
+
+    public void PopupCondition()
+    {
+        foreach (var item in previousDoors)
+        {
+            GameObject tempVar = Instantiate(conditonPrefab, prefabParent.transform);
+            tempVar.GetComponent<SetText>().Setup(item);
         }
     }
 

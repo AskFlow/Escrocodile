@@ -51,6 +51,12 @@ public class DoorManager : MonoBehaviour
         StartCoroutine(StartNewRound());
     }
 
+    public void Restart()
+    {
+        Random.InitState(GameManager.Instance.Seed);
+        StartCoroutine(StartNewRound());
+    }
+
     public IEnumerator StartNewRound()
     {
         doorSpawnPointRun = new List<GameObject>(doorSpawnPoint);
